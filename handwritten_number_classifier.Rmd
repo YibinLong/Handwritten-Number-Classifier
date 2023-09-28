@@ -1,0 +1,125 @@
+---
+title: "Handwritten Number Classifier"
+author: "Yibin Long"
+date: "2022-11-16"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+# Setup
+```{r setup}
+knitr::opts_chunk$set(echo = TRUE)
+set.seed(0)
+
+rm(list = ls())  # remove the existing environment
+
+setwd("C:/WORKZONE")
+
+## Load utils.R and discriminant_analysis.R
+
+source("utils.R")
+source("discriminant_analysis.R")
+
+
+## Load the training and test data
+train <- Load_data("./data/digits_train.txt")
+test <- Load_data("./data/digits_test.txt")
+
+x_train <- train$x
+y_train <- train$y
+
+x_test <- test$x
+y_test <- test$y
+```
+
+# Part 1
+```{r}
+# LDA
+
+myLDA_startTime <- Sys.time()
+
+priors <- Comp_priors(y_train)
+means <- Comp_cond_means(x_train, y_train)
+covs <- Comp_cond_covs(x_train, y_train, TRUE)
+
+posteriors = Predict_posterior(x_test, priors, means, covs, TRUE)
+posteriors = posteriors / rowSums(posteriors) # Normalize
+pred = Predict_labels(posteriors)
+
+mean(pred != y_test)
+# RESULT: 0.10225 -> 10.225% error rate
+
+myLDA_endTime <- Sys.time()
+
+print(myLDA_endTime - myLDA_startTime)
+
+```
+
+# Part 2
+```{r}
+# QDA
+
+myQDA_startTime <- Sys.time()
+
+priors <- Comp_priors(y_train)
+means <- Comp_cond_means(x_train, y_train)
+covs <- Comp_cond_covs(x_train, y_train, FALSE)
+
+posteriors = Predict_posterior(x_test, priors, means, covs, FALSE)
+posteriors = posteriors / rowSums(posteriors) # Normalize
+pred = Predict_labels(posteriors)
+
+mean(pred != y_test)
+# RESULT: 0.04075 -> 4.075% error rate
+
+myQDA_endTime <- Sys.time()
+
+print(myQDA_endTime - myQDA_startTime)
+
+```
+
+# Part 3
+```{r}
+# Compare my LDA/QDA to R's LDA/QDA Package
+
+library(MASS)
+
+MASS_LDA_startTime <- Sys.time()
+
+# LDA
+lda.fit <- lda(y ~ x, data = train)
+
+# Now, find the test error of the model
+lda.pred = predict(lda.fit, test)
+
+mean(lda.pred$class != y_test)
+# RESULT: 0.10225 -> 10.225% error rate
+
+MASS_LDA_endTime <- Sys.time()
+
+print(MASS_LDA_endTime - MASS_LDA_startTime)
+
+#_______________________________________________________________________________
+
+MASS_QDA_startTime <- Sys.time()
+
+# QDA
+qda.fit <- qda(y ~ x, data = train)
+
+# Now, find the test error of the model
+qda.pred = predict(qda.fit, test)
+
+mean(qda.pred$class != y_test)
+# RESULT: 0.04075 -> 4.075% error rate
+
+MASS_QDA_endTime <- Sys.time()
+
+print(MASS_QDA_endTime - MASS_QDA_startTime)
+
+```
+
+Analysis:
+In terms of misclassification rates, for LDA both my implementation and the MASS LDA function return 0.10225, or a 10.225% error rate. Likewise, for QDA both my implementation and the MASS QDA function return 0.04075, or a 4.075% error rate. So, in terms of misclassification rates my functions returned the same results as the MASS library's results.
+
+In terms of computational speed, my implementation for LDA took 3.130007 seconds, while MASS's LDA took 0.4017291 seconds, so MASS's LDA is 6.791 times faster than mine. My implementation for QDA took 8.656422 seconds, while MASS's QDA took 0.309494 seconds, so MASS's QDA is 26.970 times faster than mine. This means that there are likely many possible improvements that can be done for my implemention to speed up computational speed.
