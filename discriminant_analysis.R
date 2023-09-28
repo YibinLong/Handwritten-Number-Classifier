@@ -1,5 +1,3 @@
-
-
 Comp_priors <- function(train_labels) {
   #' Compute the priors of each class label 
   #' 
